@@ -9,7 +9,7 @@ const useStore = create((set, get) => ({
   room: null,
   collaborators: [],
   curpos: 0,
-  response: null,
+  response: {},
   history: [],
   request: null,
 
@@ -158,14 +158,32 @@ const useStore = create((set, get) => ({
     set((state) => ({ curpos: [...state.curpos, curpos] })),
 
   setResponse: (response) => set({ response }),
-  getResponse: () => {
+  getLastResponse: (reqId = '') => {
+    const req = axios.post(`${endpoint}/history/last`, { requestId: reqId });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ response: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
     return set((state) => ({ response: state.response }));
   },
   addResponse: (response) =>
     set((state) => ({ response: [...state.response, response] })),
 
   setHistory: (history) => set({ history }),
-  getHistory: () => {
+  getHistory: (reqId = '') => {
+    const req = axios.post(`${endpoint}/history/req`, { requestId: reqId });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ history: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
     return set((state) => ({ history: state.history }));
   },
   addHistory: (history) =>
@@ -174,6 +192,21 @@ const useStore = create((set, get) => ({
     set((state) => ({
       history: state.history.filter((history) => history.id !== id),
     })),
+
+  sendRequest: (request) => {
+    console.log({ ...request });
+    const req = axios.post(`${endpoint}/requests`, { ...request });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ response: res.data });
+        get().getHistory(get().request._id);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+    return set((state) => ({ response: state.response }));
+  },
 }));
 
 export const viewStore = create((set, get) => ({

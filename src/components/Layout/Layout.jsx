@@ -31,7 +31,11 @@ const Layout = () => {
               <RequestEditor />
             </Panel>
             <ResizeHandle direction='vertical' />
-            <Panel defaultSize={50} minSize={10} maxSize={90}>
+            <Panel
+              defaultSize={50}
+              minSize={10}
+              maxSize={90}
+              style={{ overflowY: 'auto' }}>
               <div
                 style={{
                   display: 'flex',

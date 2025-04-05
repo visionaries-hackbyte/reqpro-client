@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import useStore from '../../stores/useRequestStore';
 
 const RequestEditor = () => {
-  const { request, setRequest } = useStore();
+  const { request, setRequest, updateRequest, sendRequest } = useStore();
 
   const [value, setValue] = useState(null);
   const [key, setKey] = useState(null);
@@ -42,12 +42,12 @@ const RequestEditor = () => {
           <Select
             labelId='request-type-label'
             id='request-type'
-            value={request.type || 'GET'}
+            value={request.method || 'GET'}
             label='Request Type'
             onChange={(e) => {
-              setRequest({
+              updateRequest({
                 ...request,
-                type: e.target.value,
+                method: e.target.value,
               });
             }}>
             <MenuItem value='GET'>GET</MenuItem>
@@ -60,9 +60,9 @@ const RequestEditor = () => {
         <TextField
           label='address'
           variant='outlined'
-          defaultValue={request.address}
+          value={request.url || ''}
           onChange={(e) => {
-            setRequest({ ...request, address: e.target.value });
+            updateRequest({ ...request, url: e.target.value });
           }}
           sx={{
             marginRight: 2,
@@ -72,7 +72,7 @@ const RequestEditor = () => {
         <Button
           variant='contained'
           onClick={() => {
-            console.log('sending');
+            sendRequest(request);
           }}>
           Send
         </Button>
@@ -126,12 +126,12 @@ const RequestEditor = () => {
             <Button
               variant='contained'
               onClick={() => {
-                setRequest({
+                updateRequest({
                   ...request,
-                  params: [
-                    ...(request.params || []),
-                    { key: key || '', value: value || '' },
-                  ],
+                  params: {
+                    ...(request.params || {}),
+                    [key]: value,
+                  },
                 });
                 setKey('');
                 setValue('');
@@ -139,41 +139,43 @@ const RequestEditor = () => {
               Add
             </Button>
           </div>
-          {request.params?.map((param, index) => (
-            <div
-              key={`${param.key}-${index}`}
-              style={{ display: 'flex', gap: 2 }}>
+          {Object.entries(request.params || {}).map(([pkey, pvalue], index) => (
+            <div key={`${pkey}`} style={{ display: 'flex', gap: 2 }}>
               <TextField
                 label='Key'
                 variant='outlined'
-                defaultValue={param.key}
+                defaultValue={pkey}
                 onChange={(e) => {
-                  const newParams = [...request.params];
-                  newParams[index].key = e.target.value;
-                  setRequest({ ...request, params: newParams });
+                  const newKey = e.target.value;
+                  const newParams = { ...request.params };
+
+                  // Delete the old key and add the new key with the same value
+                  delete newParams[pkey];
+                  newParams[newKey] = pvalue;
+
+                  updateRequest({ ...request, params: newParams });
                 }}
               />
               <TextField
                 label='Value'
                 variant='outlined'
-                disabled={
-                  param.key === '' ||
-                  param.key === null ||
-                  param.key === undefined
-                }
-                defaultValue={param.value}
+                disabled={pkey === '' || pkey === null || pkey === undefined}
+                defaultValue={pvalue}
                 onChange={(e) => {
-                  const newParams = [...request.params];
-                  newParams[index].value = e.target.value;
-                  setRequest({ ...request, params: newParams });
+                  const newValue = e.target.value;
+                  const newParams = { ...request.params };
+
+                  // Delete the old key and add the new key with the same value
+                  newParams[pkey] = newValue;
+
+                  updateRequest({ ...request, params: newParams });
                 }}
               />
               <Button
                 onClick={() => {
-                  const newParams = request.params.filter(
-                    (_, i) => i !== index
-                  );
-                  setRequest({ ...request, params: newParams });
+                  const newParams = { ...request.params };
+                  delete newParams[pkey];
+                  updateRequest({ ...request, params: newParams });
                 }}
                 variant='contained'
                 color='error'>
@@ -212,12 +214,12 @@ const RequestEditor = () => {
             <Button
               variant='contained'
               onClick={() => {
-                setRequest({
+                updateRequest({
                   ...request,
-                  headers: [
-                    ...(request.headers || []),
-                    { key: key || '', value: value || '' },
-                  ],
+                  headers: {
+                    ...(request.headers || {}),
+                    [key]: value,
+                  },
                 });
                 setKey('');
                 setValue('');
@@ -225,48 +227,48 @@ const RequestEditor = () => {
               Add
             </Button>
           </div>
-          {request.headers?.map((header, index) => (
-            <div
-              key={`${header.key}-${index}`}
-              style={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label='Key'
-                variant='outlined'
-                defaultValue={header.key}
-                onChange={(e) => {
-                  const newHeaders = [...request.headers];
-                  newHeaders[index].key = e.target.value;
-                  setRequest({ ...request, headers: newHeaders });
-                }}
-              />
-              <TextField
-                label='Value'
-                variant='outlined'
-                disabled={
-                  header.key === '' ||
-                  header.key === null ||
-                  header.key === undefined
-                }
-                defaultValue={header.value}
-                onChange={(e) => {
-                  const newHeaders = [...request.headers];
-                  newHeaders[index].value = e.target.value;
-                  setRequest({ ...request, headers: newHeaders });
-                }}
-              />
-              <Button
-                onClick={() => {
-                  const newHeaders = request.headers.filter(
-                    (_, i) => i !== index
-                  );
-                  setRequest({ ...request, headers: newHeaders });
-                }}
-                variant='contained'
-                color='error'>
-                Delete
-              </Button>
-            </div>
-          ))}
+          {Object.entries(request.headers || {}).map(
+            ([hkey, hvalue], index) => (
+              <div key={`${hkey}-${index}`} style={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  label='Key'
+                  variant='outlined'
+                  defaultValue={hkey}
+                  onChange={(e) => {
+                    const newKey = e.target.value;
+                    const newHeaders = { ...request.headers };
+
+                    // Delete the old key and add the new key with the same value
+                    delete newHeaders[hkey];
+                    newHeaders[newKey] = hvalue;
+
+                    updateRequest({ ...request, params: newHeaders });
+                  }}
+                />
+                <TextField
+                  label='Value'
+                  variant='outlined'
+                  disabled={hkey === '' || hkey === null || hkey === undefined}
+                  defaultValue={hvalue}
+                  onChange={(e) => {
+                    const newHeaders = { ...request.headers };
+                    newHeaders[hkey] = e.target.value;
+                    updateRequest({ ...request, headers: newHeaders });
+                  }}
+                />
+                <Button
+                  onClick={() => {
+                    const newHeaders = { ...request.headers };
+                    delete newHeaders[hkey];
+                    updateRequest({ ...request, headers: newHeaders });
+                  }}
+                  variant='contained'
+                  color='error'>
+                  Delete
+                </Button>
+              </div>
+            )
+          )}
         </div>
       )}
       {tab === 3 && (
@@ -279,7 +281,7 @@ const RequestEditor = () => {
             rows={10}
             defaultValue={request.body}
             onChange={(e) => {
-              setRequest({ ...request, body: e.target.value });
+              updateRequest({ ...request, body: e.target.value });
             }}
           />
         </div>
