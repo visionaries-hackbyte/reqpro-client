@@ -1,10 +1,16 @@
 import { Button, Container } from '@mui/material';
-import React from 'react';
+import React, { useEffect } from 'react';
 import useStore, { viewStore } from '../../stores/useRequestStore';
 
 const Sidebar = () => {
   const { setViewNew } = viewStore();
-  const { collections, requests, setRequest } = useStore();
+  const { collections, requests, setRequest, getCollections, getRequests } =
+    useStore();
+
+  useEffect(() => {
+    getCollections();
+    getRequests();
+  }, [getCollections, getRequests]);
 
   return (
     <div>
@@ -13,16 +19,16 @@ const Sidebar = () => {
       </Button>
       <Container>
         {collections.map((collection) => (
-          <div key={collection.id}>
+          <div key={collection._id}>
             <h3>{collection.name}</h3>
             {requests
-              .filter((request) => request.collectionId === collection.id)
+              .filter((request) => request.collectionId === collection._id)
               .map((request) => (
                 <div
                   onClick={() => {
                     setRequest(request);
                   }}
-                  key={request.id}
+                  key={request._id}
                   style={{
                     marginLeft: '20px',
                     boxSizing: 'border-box',
@@ -37,7 +43,7 @@ const Sidebar = () => {
           .filter((request) => request.collectionId === null)
           .map((request) => (
             <div
-              key={request.id}
+              key={request._id}
               style={{
                 cursor: 'pointer',
               }}
