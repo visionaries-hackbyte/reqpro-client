@@ -1,4 +1,7 @@
+import axios from 'axios';
 import { create } from 'zustand';
+
+const endpoint = 'http://localhost:5000/api';
 
 const useStore = create((set, get) => ({
   requests: [],
@@ -10,20 +13,73 @@ const useStore = create((set, get) => ({
   history: [],
   request: null,
 
-  setRequest: (request) => set({ request }),
-  getRequest: () => {
+  setRequest: (request) => {
+    set({ request });
+    get().getRequest(request._id);
+    get().getHistory(request._id);
+  },
+  getRequest: (reqId) => {
+    const req = axios.get(`${endpoint}/requests/${reqId}`);
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ request: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
     return set((state) => ({ request: state.request }));
+  },
+  addRequest: (request) => {
+    const req = axios.post(`${endpoint}/requests/new`, {
+      name: request.name,
+      description: request.description || '',
+      collectionId: request.collectionId || null,
+    });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set((state) => ({
+          requests: [...state.requests, res.data],
+        }));
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  },
+  updateRequest: (request) => {
+    const req = axios.put(`${endpoint}/requests/`, {
+      ...get().request,
+      ...request,
+    });
+    req
+      .then((res) => {
+        console.log(res.data);
+        get().setRequest({ ...request });
+        set((state) => ({
+          requests: state.requests.map((r) =>
+            r._id === request._id ? { ...r, ...request } : r
+          ),
+        }));
+      })
+      .catch((err) => {
+        console.error(err);
+      });
   },
 
   setRequests: (requests) => set({ requests }),
   getRequests: () => {
+    const req = axios.get(`${endpoint}/requests`);
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ requests: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
     return set((state) => ({ requests: state.requests }));
   },
-  addRequest: (request) =>
-    set((state) => {
-      request.id = get().requests.length + 1;
-      return { requests: [...state.requests, request] };
-    }),
   removeRequest: (id) =>
     set((state) => ({
       requests: state.requests.filter((request) => request.id !== id),
@@ -31,19 +87,47 @@ const useStore = create((set, get) => ({
 
   setCollections: (collections) => set({ collections }),
   getCollections: () => {
+    const req = axios.get(`${endpoint}/collections`);
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ collections: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
     return set((state) => ({ collections: state.collections }));
   },
-  addCollection: (collection) =>
-    set((state) => {
-      collection.id = get().collections.length + 1;
-      return { collections: [...state.collections, collection] };
-    }),
-  removeCollection: (id) =>
-    set((state) => ({
-      collections: state.collections.filter(
-        (collection) => collection.id !== id
-      ),
-    })),
+  addCollection: (collection) => {
+    const req = axios.post(`${endpoint}/collections`, {
+      name: collection.name,
+      description: collection.description || '',
+    });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set((state) => ({
+          collections: [...state.collections, res.data],
+        }));
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  },
+  removeCollection: (id) => {
+    const req = axios.delete(`${endpoint}/collections/${id}`);
+    req
+      .then(() => {
+        set((state) => ({
+          collections: state.collections.filter(
+            (collection) => collection.id !== id
+          ),
+        }));
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  },
 
   setRoom: (room) => {
     // TODO: go back to local room and requests ending collaboration
