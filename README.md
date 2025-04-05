@@ -1,4 +1,4 @@
-# Postman Clone (Frontend)
+# ReqPro (Frontend)
 
 A real-time collaborative API testing tool with Postman-like features, built with React, MUI, and Socket.io.
 
@@ -12,13 +12,13 @@ A real-time collaborative API testing tool with Postman-like features, built wit
 
 ## 🛠 Tech Stack
 
-| Frontend | Backend |
-|----------|---------|
-| React 18 | Node.js |
-| Material-UI | Express |
-| Zustand | MongoDB |
+| Frontend         | Backend   |
+| ---------------- | --------- |
+| React 18         | Node.js   |
+| Material-UI      | Express   |
+| Zustand          | MongoDB   |
 | Socket.io-client | Socket.io |
-| react-split-pane | Axios |
+| react-split-pane | Axios     |
 
 ## 🚀 Quick Start
 
