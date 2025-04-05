@@ -1,7 +1,8 @@
 import { Button } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Panel, PanelGroup } from 'react-resizable-panels';
-import { viewStore } from '../../stores/useRequestStore';
+import { useNavigate } from 'react-router';
+import useStore, { viewStore } from '../../stores/useRequestStore';
 import HistoryView from '../HistoryView/HistoryView';
 import NewPopUp from '../NewPopUp/NewPopUp';
 import RequestEditor from '../RequestEditor/RequestEditor';
@@ -11,6 +12,14 @@ import Sidebar from '../Sidebar/Sidebar';
 
 const Layout = () => {
   const view = viewStore((state) => state.viewNew);
+  const { userId } = useStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!userId) {
+      navigate('/login');
+    }
+  }, []);
 
   useEffect(() => {
     console.log('view changed to', view);

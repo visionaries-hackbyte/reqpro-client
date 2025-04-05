@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { create } from 'zustand';
 
 const endpoint = 'http://localhost:5000/api';
@@ -6,12 +7,105 @@ const endpoint = 'http://localhost:5000/api';
 const useStore = create((set, get) => ({
   requests: [],
   collections: [],
-  room: null,
-  collaborators: [],
-  curpos: 0,
   response: {},
   history: [],
   request: null,
+  userId: null,
+  socket: null,
+  isConnected: false,
+  room: null,
+  curpos: 0,
+  collaborators: [],
+
+  connect: () => {
+    const socket = io(process.env.REACT_APP_API_URL);
+
+    socket.on('connect', () => {
+      console.log('Connected to socket server');
+      set({ isConnected: true });
+    });
+    socket.on('disconnect', () => {
+      console.log('Disconnected from socket server');
+      set({ isConnected: false });
+    });
+
+    socket.on('document-update', (type, itemId, delta) => {
+      console.log('Document update:', type, itemId, delta);
+      // Handle document update logic here
+    });
+
+    set({ socket });
+  },
+
+  joinRoom: (roomId) => {
+    const socket = get().socket;
+    if (socket) {
+      socket.emit('join-room', roomId, (response) => {
+        console.log('Joined room:', response);
+      });
+    } else {
+      console.error('Socket not connected');
+    }
+  },
+
+  leaveRoom: (roomId) => {
+    const socket = get().socket;
+    if (socket) {
+      socket.emit('disconnect', roomId, (response) => {
+        console.log('Left room:', response);
+      });
+    } else {
+      console.error('Socket not connected');
+    }
+  },
+
+  setRoomId: (roomId) => {
+    set({ room: roomId });
+  },
+
+  documentUpdate: (roomId, type, itemId, delta) => {
+    const socket = get().socket;
+    if (socket) {
+      socket.emit('document-update', roomId, type, itemId, delta);
+    } else {
+      console.error('Socket not connected');
+    }
+  },
+
+  login: (username, password) => {
+    const req = axios.post(`${endpoint}/auth/login`, {
+      username,
+      password,
+    });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ userId: res.data._id });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  },
+
+  signUp: (username, password) => {
+    const req = axios.post(`${endpoint}/auth/register`, {
+      username,
+      password,
+    });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ userId: res.data._id });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  },
+
+  setUserId: (userId) => set({ userId }),
+  getUserId: () => {
+    return set((state) => ({ userId: state.userId }));
+  },
 
   setRequest: (request) => {
     set({ request });
@@ -35,6 +129,8 @@ const useStore = create((set, get) => ({
       name: request.name,
       description: request.description || '',
       collectionId: request.collectionId || null,
+      userId: get().userId,
+      roomId: get().room || null,
     });
     req
       .then((res) => {
@@ -80,6 +176,35 @@ const useStore = create((set, get) => ({
       });
     return set((state) => ({ requests: state.requests }));
   },
+
+  getRequestsByUser: () => {
+    const userId = get().userId;
+    const req = axios.post(`${endpoint}/requests/user`, { userId });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ requests: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+    return set((state) => ({ requests: state.requests }));
+  },
+
+  getRequestsByRoom: () => {
+    const roomId = get().room;
+    const req = axios.post(`${endpoint}/requests/room`, { roomId });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ requests: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+    return set((state) => ({ requests: state.requests }));
+  },
+
   removeRequest: (id) =>
     set((state) => ({
       requests: state.requests.filter((request) => request.id !== id),
@@ -98,10 +223,38 @@ const useStore = create((set, get) => ({
       });
     return set((state) => ({ collections: state.collections }));
   },
+  getCollectionsByUser: () => {
+    const userId = get().userId;
+    const req = axios.post(`${endpoint}/collections/user`, { userId });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ collections: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+    return set((state) => ({ collections: state.collections }));
+  },
+  getCollectionsByRoom: () => {
+    const roomId = get().room;
+    const req = axios.post(`${endpoint}/collections/room`, { roomId });
+    req
+      .then((res) => {
+        console.log(res.data);
+        set({ collections: res.data });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+    return set((state) => ({ collections: state.collections }));
+  },
   addCollection: (collection) => {
     const req = axios.post(`${endpoint}/collections`, {
       name: collection.name,
       description: collection.description || '',
+      userId: get().userId,
+      roomId: get().room || null,
     });
     req
       .then((res) => {

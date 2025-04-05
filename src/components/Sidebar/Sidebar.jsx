@@ -1,21 +1,46 @@
-import { Button, Container } from '@mui/material';
-import React, { useEffect } from 'react';
+import { Button, Container, TextField } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import useStore, { viewStore } from '../../stores/useRequestStore';
 
 const Sidebar = () => {
   const { setViewNew } = viewStore();
-  const { collections, requests, setRequest, getCollections, getRequests } =
-    useStore();
+  const {
+    collections,
+    requests,
+    setRequest,
+    getCollectionsByUser,
+    getCollectionsByRoom,
+    getRequestsByUser,
+    getRequestsByRoom,
+    room,
+    userId,
+    setRoomId,
+  } = useStore();
+
+  const [roomId, setRoomIdn] = useState(room);
 
   useEffect(() => {
-    getCollections();
-    getRequests();
-  }, [getCollections, getRequests]);
+    if (room) {
+      getCollectionsByRoom(room);
+      getRequestsByRoom(room);
+    } else {
+      getCollectionsByUser(userId);
+      getRequestsByUser(userId);
+    }
+  }, [userId, room]);
 
   return (
     <div>
       <Button variant='contained' onClick={() => setViewNew(true)}>
         New
+      </Button>
+      <TextField
+        value={roomId}
+        label='Room ID'
+        onChange={(e) => setRoomIdn(e.target.value)}
+      />
+      <Button variant='contained' onClick={() => setRoomId(roomId)}>
+        Join
       </Button>
       <Container>
         {collections.map((collection) => (
