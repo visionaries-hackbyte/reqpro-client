@@ -18,7 +18,7 @@ const useStore = create((set, get) => ({
   collaborators: [],
 
   connect: () => {
-    const socket = io(process.env.REACT_APP_API_URL);
+    const socket = io('http://localhost:5000');
 
     socket.on('connect', () => {
       console.log('Connected to socket server');
@@ -27,6 +27,11 @@ const useStore = create((set, get) => ({
     socket.on('disconnect', () => {
       console.log('Disconnected from socket server');
       set({ isConnected: false });
+    });
+
+    socket.on('room-joined', (roomId) => {
+      console.log('Joined room:', roomId);
+      set({ room: roomId });
     });
 
     socket.on('document-update', (type, itemId, delta) => {
@@ -39,8 +44,12 @@ const useStore = create((set, get) => ({
 
   joinRoom: (roomId) => {
     const socket = get().socket;
+    if (!socket) {
+      get().connect();
+    }
     if (socket) {
-      socket.emit('join-room', roomId, (response) => {
+      console.log('trying to join room', roomId);
+      socket.emit('join-room', (get().userId, roomId), (response) => {
         console.log('Joined room:', response);
       });
     } else {
@@ -138,6 +147,7 @@ const useStore = create((set, get) => ({
         set((state) => ({
           requests: [...state.requests, res.data],
         }));
+        get().documentUpdate(get().room, 'request', res.data._id, res.data);
       })
       .catch((err) => {
         console.error(err);

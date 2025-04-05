@@ -15,6 +15,7 @@ const Sidebar = () => {
     room,
     userId,
     setRoomId,
+    joinRoom,
   } = useStore();
 
   const [roomId, setRoomIdn] = useState(room);
@@ -39,7 +40,7 @@ const Sidebar = () => {
         label='Room ID'
         onChange={(e) => setRoomIdn(e.target.value)}
       />
-      <Button variant='contained' onClick={() => setRoomId(roomId)}>
+      <Button variant='contained' onClick={() => joinRoom(roomId)}>
         Join
       </Button>
       <Container>
