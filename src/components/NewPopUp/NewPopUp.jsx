@@ -75,7 +75,7 @@ const NewPopUp = () => {
                 setCollection(e.target.value);
               }}>
               {collections.map((collection) => (
-                <MenuItem key={collection.id} value={collection.id}>
+                <MenuItem key={collection._id} value={collection._id}>
                   {collection.name}
                 </MenuItem>
               ))}
