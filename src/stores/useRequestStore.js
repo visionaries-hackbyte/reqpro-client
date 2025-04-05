@@ -34,9 +34,48 @@ const useStore = create((set, get) => ({
       set({ room: roomId });
     });
 
-    socket.on('document-update', (type, itemId, delta) => {
-      console.log('Document update:', type, itemId, delta);
+    socket.on('document-update', (op, type, itemId, delta) => {
+      console.log('Document update:', op, type, itemId, delta);
       // Handle document update logic here
+      if (type == 'request') {
+        if (op == 'create') {
+          get().setRequests([...get().requests, delta]);
+        } else if (op == 'del') {
+          get().setRequests(
+            ...get().requests.filter((r) => {
+              r._id != delta._id;
+            })
+          );
+        } else if (op == 'update') {
+          get().setRequests(
+            get().requests.map((r) => (r._id === delta._id ? delta : r))
+          );
+          if (delta._id == get().request._id) {
+            get().setRequest(delta);
+          }
+        }
+      } else if (type == 'collection') {
+        if (op == 'create') {
+          get().setCollections([...get().collections, delta]);
+        } else if (op == 'del') {
+          get().setCollections(
+            ...get().collections.filter((r) => {
+              r._id != delta._id;
+            })
+          );
+        } else if (op == 'update') {
+          get().setCollections(
+            get().collections.map((r) => (r._id === delta._id ? delta : r))
+          );
+        }
+      } else if (type == 'history') {
+        if (op == 'create') {
+          if (get().request._id == delta.requestId) {
+            get().setHistory([...get().history, delta]);
+            get().setResponse(delta);
+          }
+        }
+      }
     });
 
     set({ socket });
@@ -120,6 +159,7 @@ const useStore = create((set, get) => ({
     set({ request });
     get().getRequest(request._id);
     get().getHistory(request._id);
+    get().getLastResponse(request._id);
   },
   getRequest: (reqId) => {
     const req = axios.get(`${endpoint}/requests/${reqId}`);
@@ -147,7 +187,9 @@ const useStore = create((set, get) => ({
         set((state) => ({
           requests: [...state.requests, res.data],
         }));
-        get().documentUpdate(get().room, 'request', res.data._id, res.data);
+        get().documentUpdate(get().room, 'create', 'request', res.data._id, {
+          ...res.data,
+        });
       })
       .catch((err) => {
         console.error(err);
@@ -167,6 +209,13 @@ const useStore = create((set, get) => ({
             r._id === request._id ? { ...r, ...request } : r
           ),
         }));
+        get().documentUpdate(
+          get().room,
+          'update',
+          'request',
+          request._id,
+          request
+        );
       })
       .catch((err) => {
         console.error(err);
@@ -272,6 +321,13 @@ const useStore = create((set, get) => ({
         set((state) => ({
           collections: [...state.collections, res.data],
         }));
+        get().documentUpdate(
+          get().room,
+          'create',
+          'collection',
+          res.data._id,
+          res.data
+        );
       })
       .catch((err) => {
         console.error(err);
@@ -364,6 +420,14 @@ const useStore = create((set, get) => ({
         console.log(res.data);
         set({ response: res.data });
         get().getHistory(get().request._id);
+        get().getLastResponse(get().request._id);
+        get().documentUpdate(
+          get().room,
+          'create',
+          'history',
+          get().request._id,
+          res.data
+        );
       })
       .catch((err) => {
         console.error(err);
