@@ -114,7 +114,7 @@ const useStore = create((set, get) => ({
   documentUpdate: (roomId, op, type, itemId, delta) => {
     const socket = get().socket;
     if (socket) {
-      socket.emit('document-update', op, roomId, type, itemId, delta);
+      socket.emit('document-update', get().room, op, type, itemId, delta);
     } else {
       console.error('Socket not connected');
     }
