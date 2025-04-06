@@ -111,10 +111,10 @@ const useStore = create((set, get) => ({
     set({ room: roomId });
   },
 
-  documentUpdate: (roomId, type, itemId, delta) => {
+  documentUpdate: (roomId, op, type, itemId, delta) => {
     const socket = get().socket;
     if (socket) {
-      socket.emit('document-update', roomId, type, itemId, delta);
+      socket.emit('document-update', op, roomId, type, itemId, delta);
     } else {
       console.error('Socket not connected');
     }
@@ -187,6 +187,7 @@ const useStore = create((set, get) => ({
         set((state) => ({
           requests: [...state.requests, res.data],
         }));
+        console.log('request', res.data);
         get().documentUpdate(get().room, 'create', 'request', res.data._id, {
           ...res.data,
         });
